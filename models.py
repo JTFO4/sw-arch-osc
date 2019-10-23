@@ -21,6 +21,10 @@ class AuthUser(models.Model):
     date_joined = models.DateTimeField()
 
     class Meta:
+<<<<<<< HEAD
+=======
+        managed = True
+>>>>>>> da6bad7f30113f8e7cfac5c2dd5b9af9fdc24e08
         db_table = 'auth_user'
 
 
@@ -31,6 +35,10 @@ class CartTable(models.Model):
     quantity = models.IntegerField(db_column='Quantity')  # Field name made lowercase.
 
     class Meta:
+<<<<<<< HEAD
+=======
+        managed = False
+>>>>>>> da6bad7f30113f8e7cfac5c2dd5b9af9fdc24e08
         db_table = 'cart_table'
 
 
@@ -44,6 +52,10 @@ class DjangoAdminLog(models.Model):
     user = models.ForeignKey(AuthUser, models.DO_NOTHING)
 
     class Meta:
+<<<<<<< HEAD
+=======
+        managed = False
+>>>>>>> da6bad7f30113f8e7cfac5c2dd5b9af9fdc24e08
         db_table = 'django_admin_log'
 
 
@@ -85,6 +97,10 @@ class InventoryTable(models.Model):
     inventory_id = models.CharField(db_column='Inventory_Id', primary_key=True, max_length=255)  # Field name made lowercase.
 
     class Meta:
+<<<<<<< HEAD
+=======
+        managed = False
+>>>>>>> da6bad7f30113f8e7cfac5c2dd5b9af9fdc24e08
         db_table = 'inventory_table'
 
 
@@ -96,6 +112,10 @@ class OrderitemsTable(models.Model):
     price = models.IntegerField(db_column='Price')  # Field name made lowercase.
 
     class Meta:
+<<<<<<< HEAD
+=======
+        managed = False
+>>>>>>> da6bad7f30113f8e7cfac5c2dd5b9af9fdc24e08
         db_table = 'orderitems_table'
 
 
@@ -107,6 +127,10 @@ class OrdersTable(models.Model):
     date = models.CharField(db_column='Date', max_length=10)  # Field name made lowercase.
 
     class Meta:
+<<<<<<< HEAD
+=======
+        managed = False
+>>>>>>> da6bad7f30113f8e7cfac5c2dd5b9af9fdc24e08
         db_table = 'orders_table'
 
 
@@ -119,4 +143,8 @@ class UsersTable(models.Model):
     shipping_add = models.CharField(db_column='Shipping_Add', max_length=30)  # Field name made lowercase.
 
     class Meta:
+<<<<<<< HEAD
+=======
+        managed = False
+>>>>>>> da6bad7f30113f8e7cfac5c2dd5b9af9fdc24e08
         db_table = 'users_table'
