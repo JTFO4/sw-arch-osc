@@ -1,5 +1,6 @@
 import json
 from database import *
+from initializeDB import *
 #
 #
 #we will store dictionaries as json strings in the database
@@ -9,7 +10,7 @@ from database import *
 #easy to and from json functions to speed things along
 #
 
-sql = "SELECT * FROM inventoryTable"
+#sql = "SELECT item FROM inventoryTable"
 
 def returnRowDicts(sql, param=None):
     if(param == None):
@@ -31,7 +32,10 @@ def fromJSON(Load):
     return jsonLoad
 
 
-
+#results = c.execute(sql)
+#results = c.fetchall()
+#itemDict = returnRowDicts(sql)
+#print(itemDict)
 
 
 
