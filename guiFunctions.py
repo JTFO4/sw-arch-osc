@@ -1,4 +1,4 @@
-from database import *
+from initializeDB import *
 from dictFunctions import *
 from dbFunctions import *
 
@@ -12,6 +12,31 @@ def viewInventoryScreen(userId):
         userInput = input("Type 'add' to add an item to your cart. Type 'viewCart' to view your cart.\nType 'logout' to logout. ")
         check = checkUserInput(userInput, userId)
     return False
+
+#this is the past orders screen users can use to see their past orders
+def viewOrdersScreen(userId):
+    showOrders(userId)
+    print("If you'd like to view the cart of a specific order, type it's ID and hit enter.\nType 'return' to leave screen.")
+    check = False
+    while(check == False):
+        userInput = input("")
+        try:
+            isInt = isinstance(int(userInput), int)
+            if(isinstance(int(userInput), int)):
+                try:
+                    userInput = int(userInput)
+                    showUniqOrder(userId, userInput)
+                    print("Type 'return' to continue ")
+                    continue
+                except:
+                    print("No order of that ID")
+                    print("Type correct ID or 'return' to leave screen.")
+                    continue
+        except:
+            if(userInput == 'return'):
+                return
+            else:
+                continue
 
 
 
@@ -88,13 +113,14 @@ def checkUserInputCart(userId):
     print("You can increase the quantity of items by using 'add'.")
     print("You can remove items by using 'remove'.")
     print("You can checkout by using 'checkout'.")
+    print("You can view past orders by using 'orders'.")
     print("You can return to the inventory screen by using 'return'.")
     command = input("")
 
     #this will be our add keyword
     if(command == "add"):
         try:
-            item, quantity = input("Enter the item ID you would like and how many (case sensitive): ").split()
+            item, quantity = input("Enter the item ID you would like and how many: ").split()
         except:
             print("We're sorry, that didn't work!  Remember to type the item's ID and then quantity.")
             input("Please hit enter to continue.")
@@ -109,7 +135,7 @@ def checkUserInputCart(userId):
     
     elif(command == "remove"):
         try:
-            item, quantity = input("Enter the item ID of the item you would like and how many (case sensitive): ").split()
+            item, quantity = input("Enter the item ID of the item you would like and how many: ").split()
         except:
             print("We're sorry, that didn't work!  Remember to type the item's ID and then quantity.")
             input("Please hit enter to continue.")
@@ -126,5 +152,8 @@ def checkUserInputCart(userId):
     elif(command == 'checkout'):
         checkout(userId)
         return False
+    elif(command == 'orders'):
+        viewOrdersScreen(userId)
+        return True
     elif(command == 'return'):
         return False

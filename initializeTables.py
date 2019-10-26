@@ -16,7 +16,7 @@ c.execute("INSERT INTO inventoryTable(price, item, description, quantity) VALUES
 
 conn.commit()
 
-c.execute("INSERT INTO inventoryTable(price, item, description, quantity) VALUES(12.35, 'Encyclopedia: Assorted Encyclopedias', 'the only encyclopedia you will ever need', 12)")
+c.execute("INSERT INTO inventoryTable(price, item, description, quantity) VALUES(12.35, 'Encyclopedia: Assorted Encyclopedias', 'the only book you will ever need', 12)")
 
 conn.commit()
 

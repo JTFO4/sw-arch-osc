@@ -167,28 +167,25 @@ def updateFinalTotalandInventory(userId):
     #then we'll get a list of all the quantities
     inventoryItems = []
     inventoryQuantities = []
+    correctInventoryQuantities = [] #this is just the quantities of the IDs that are held in items[]
     for row in results:
         inventoryItems.append(row['inventoryId'])
         inventoryQuantities.append(row['quantity'])
     #alright, now we gotta do comparisons
-    for i in range(len(userItems)):
-        for x in range(len(inventoryItems)):
+    totalChanged = False #we'll check if the total changed later
+    for i in range(len(userItems)): #for how many items are in the cart
+        for x in range(len(inventoryItems)): #check them against how many items there are in inventory
             if(items[i] == inventoryItems[x]):
+                correctInventoryQuantities.append(inventoryQuantities[x])
                 if(itemQuantities[i] > inventoryQuantities[x]):
+                    totalChanged = True #if we got here, the total changed 
                     itemQuantities[i] = inventoryQuantities[x] #simply change the value in the cart.  The user will never know until the order is placed
-                    #print("ITEM QUANTITIES 2: ", itemQuantities[x], "inventory quantities 2:", inventoryQuantities[x])
-    #now update the totals and the inventory
-    sqlInventoryUpdate = "UPDATE inventoryTable SET quantity=? WHERE inventoryId=?"
-    #we're gonna do multiple updates, so
-    for x in range(len(items)):
-        c.execute(sqlInventoryUpdate, ((inventoryQuantities[x]-itemQuantities[x]), items[x] ))
-        conn.commit()
     #we've got the inventory updated, let's update the cart
     #this takes a bit more since all of our stuff is in dictionaries. so
     finalTotal = 0
     print("")
     print("")
-    print("Purchased: \n====================================") #using this to prettify our purchase print()
+    print("Checkout: \n====================================") #using this to prettify our purchase print()
     for x in range(len(userItems)):
         userItems[x]['quantity'] = itemQuantities[x]
         #now we got that solved.  Let's fix the total
@@ -198,10 +195,27 @@ def updateFinalTotalandInventory(userId):
     #booyah.  Let's update the cart and call it a day.
     print("------------------------------------")
     print("For a grand total of: $", ( "%5.2f"% finalTotal))
-    userItems = toJSON(userItems) #put it back in json format
-    sqlUpdateCart = "UPDATE cartTable SET items=?, total=? WHERE userId=?"
-    c.execute(sqlUpdateCart, (userItems, finalTotal, userId,))
-    conn.commit()
+    print("")
+    print("")
+    if(totalChanged == True):
+        print("Your cart had a few items over the stock quantity.")
+    print("Your total is going to be $", (( "%5.2f"% finalTotal)))
+    check = input("Would you like to continue checking out[y/n]?")
+    if(check == 'n'):
+        return False
+    else:
+        #now update the totals and the inventory
+        sqlInventoryUpdate = "UPDATE inventoryTable SET quantity=? WHERE inventoryId=?"
+        #we're gonna do multiple updates, so
+        for x in range(len(items)):
+            #print("ITEMS[x]: ", items[x], "inventoryQ[x]: ", correctInventoryQuantities[x], "invId: ", inventoryItems[x], "ITEMQ: ", itemQuantities[x])
+            c.execute(sqlInventoryUpdate, ((correctInventoryQuantities[x]-itemQuantities[x]), items[x] ))
+            conn.commit()
+        userItems = toJSON(userItems) #put it back in json format
+        sqlUpdateCart = "UPDATE cartTable SET items=?, total=? WHERE userId=?"
+        c.execute(sqlUpdateCart, (userItems, finalTotal, userId,))
+        conn.commit()
+        return True
 
 
     
@@ -211,7 +225,18 @@ def updateFinalTotalandInventory(userId):
 #here's the checkout function that walks the user through checkout
 #==================================================================
 def checkout(userId):
+    print("")
+    print("")
     print("Welcome to checkout!  We hope you found everything you wanted!")
+    sqlCheckCart = "SELECT total FROM cartTable WHERE userId=?"
+    checkTotal = c.execute(sqlCheckCart, (userId,))
+    checkTotal = c.fetchone()
+    if(checkTotal['total'] == 0):
+        print("Your cart is empty. Cannot checkout")
+        print("")
+        print("press enter to continue")
+        input("")
+        return
     #check to see if the user has a shipping address
     sql = "SELECT * FROM usersTable WHERE userId=?"
     result = c.execute(sql, (userId,))
@@ -223,72 +248,63 @@ def checkout(userId):
         check = input("Is this correct[y/n]?")
     #either the user wanted to change their shipping address or didn't have one
     if(result['shippingAddress'] == None or check == 'n'):
-        shippingAddress = input("Please enter your shipping address and hit enter.. ")
+        #it's a multi spaced input sooooooo
+        shippingAddress = list(map(str,input("Please enter your shipping address and hit enter.. ").split()))
+        shipAddString = ""
+        #make a string out of the list
+        for x in range(len(shippingAddress)):
+            shipAddString = shipAddString + " " + shippingAddress[x]
+        #update the shipping address in the database
         sqlShipping = "UPDATE usersTable SET shippingAddress=? WHERE userId=?"
-        result = c.execute(sqlShipping, (shippingAddress, userId,))
+        result = c.execute(sqlShipping, (shipAddString, userId,))
         conn.commit()
-        print("The package will be sent to ", result['shippingAddress'])
+        print("The package will be sent to", shipAddString)
     #grab the user's cart information
     sql = "SELECT * FROM cartTable WHERE userId=?"
     result = c.execute(sql, (userId,))
     result = c.fetchone()
     print("")
     print("")
-    print("Your total is going to be $", (( "%5.2f"% result['total'])))
-    check = input("Would you like to continue checking out[y/n]?")
-    if(check == 'n'):
-        return #they didn't wanna checkout after all I guess
-    else:
-        print("")
-        #get the user's credit card
+    print("")
+    #get the user's credit card
+    while(True):
         creditcard = input("Please type your 10 digit credit-card number: ")
-        #check the credit card is a number and 10 digits long
         try:
-            creditcard = int(creditcard)
-            isCorrect = True
+            if(len(creditcard) == 10):
+                creditcard = int(creditcard)
+                break
         except:
-            isCorrect = False
-        if(isCorrect == False or len(str(creditcard)) != 10):
-            while(isCorrect == False or len(str(creditcard)) != 10):
-                print("Your credit-card number was not a 10 digit number.  Please enter your 10 digit credit card number.")
-                creditcard = input("10 digits: ")
-                isCorrect = isinstance(creditcard, int)
+            print("please type a 10 digit credit-card number ")
+            continue
+    print("")
+    print("")
+    #check the user's final total
+    check = updateFinalTotalandInventory(userId)
+    if(check == False):
+        print("your order has been canceled.")
         print("")
         print("")
-        #check the user's final total
-        updateFinalTotalandInventory(userId)
+        return
+    else:
         sqlChange = "SELECT * FROM cartTable WHERE userId=?"
         change = c.execute(sql, (userId,))
         change = c.fetchone()
-        #check whether the total has changed.  
-        if(result['total'] != change['total']):
-            print("Your cart had a few items that had a quantity greater than was in stock.")
-            print("Your new total is: $", change['total'])
-        check = input("Are you sure you would like to make this purchase[y/n]?")
-        if(check == 'n'):
-            #set the items and such in the cart back to what they were before updateFinalTotalandInventory was called
-            sqlRevertCart = "UPDATE cartTable SET items=?, total=? WHERE userId=?"
-            c.execute(sqlRevertCart, (result['items'], result['total'], userId))
-            input("Your order has been canceled.  Press enter to continue..")
-            return #guess they didn't wanna
-        elif(check == 'y'): #gotta be extra sure with a final yes or no
-            #we're gonna update the final total and such in the cart for the correct amount
-                #grab the user's cart again because the fields have changed since then
-            sql = "SELECT * FROM cartTable WHERE userId=?"
-            result = c.execute(sql, (userId,))
-            result = c.fetchone()
-            #store the order in the ordersTable
-            sql = "INSERT INTO ordersTable(userId, items, total, date, creditcard) VALUES(?, ?, ?, CURRENT_TIMESTAMP, ?)"
-            result = c.execute(sql, (userId, result['items'], result['total'], creditcard ))
-            conn.commit()
-            sql = "UPDATE cartTable SET items=NULL, total=0 WHERE userId=?" #this is just emptying out the cart for later uses.
-            result = c.execute(sql, (userId,))
-            conn.commit()
-            print("")
-            print("Congratulations on your purchase! You can view this order on the orders screen.  Have a nice day!")
-            input("press enter to continue back to the inventory screen.")
-        else:
-            return #take that as a no
+        #gotta be extra sure with a final yes or no
+        #we're gonna update the final total and such in the cart for the correct amount
+            #grab the user's cart again because the fields have changed since then
+        sql = "SELECT * FROM cartTable WHERE userId=?"
+        result = c.execute(sql, (userId,))
+        result = c.fetchone()
+        #store the order in the ordersTable
+        sql = "INSERT INTO ordersTable(userId, items, total, date, creditcard) VALUES(?, ?, ?, CURRENT_TIMESTAMP, ?)"
+        result = c.execute(sql, (userId, result['items'], result['total'], creditcard ))
+        conn.commit()
+        sql = "UPDATE cartTable SET items=NULL, total=0 WHERE userId=?" #this is just emptying out the cart for later uses.
+        result = c.execute(sql, (userId,))
+        conn.commit()
+        print("")
+        print("Congratulations on your purchase! You can view this order on the orders screen.  Have a nice day!")
+        input("press enter to continue back to the inventory screen.")
 
 
         
@@ -311,6 +327,12 @@ def showInventory():
     
 #Looks like a lot of logic, but it's just some print statements
 def showCart(userId):
+    #let's get the user's username for good looks
+    sqlGetUsername = "SELECT username FROM usersTable WHERE userId=?"
+    username = c.execute(sqlGetUsername, (userId,))
+    username = c.fetchone()
+    username = username['username']
+    #now let's get the cart
     sql = "SELECT * FROM cartTable WHERE userId=?"
     result = c.execute(sql, (userId,))
     result = c.fetchone()
@@ -335,18 +357,57 @@ def showCart(userId):
         priceList.append(userItems[x]['price'])
         descriptionList.append(userItems[x]['description'])
     #spacing like the inventory page
+    print(username + "'s Cart")
+    print("==================================================================================================================================================================")
     print ("%-5s%-60s%-40s%-5s%24s%10s\n" % ("ID", "Item Name", "Description", "Quantity","|", "Price"))
     for x in range(len(userItems)):
         print ("%-5s%-60s%-40s%-5s%27s%10s\n" % (str(IdList[x]), str(itemsList[x]), str(descriptionList[x]), str(quantityList[x]),"$", str(( "%8.2f"% priceList[x]))))
     print("Total in Cart: $", ( "%8.2f"% userTotal))
     print("")
 
-    def showOrders(userId):
-        sql = "SELECT * FROM ordersTable WHERE userId=?"
-        results = c.execute(sql, (userId,))
-        results = c.fetchall()
-        #print ("%-5s%-60s%-40s%-5s%24s%10s\n" % ("ID", "Items", "Total", "Date"))
+def showOrders(userId):
+    print("")
+    print("")
+    sql = "SELECT * FROM ordersTable WHERE userId=?"
+    results = c.execute(sql, (userId,))
+    results = c.fetchall()
+    #if we have any results
+    if(results):
+        print ("%-5s%-60s%24s%20s\n" % ("ID", "Total", "Date", "Credit Card"))
         for row in results:
+            print ("%-5s%-60s%24s%20s\n" % (row['orderId'],("%8.2f"% row['total']), row['date'], row['creditcard']))
+    #if we don't
+    else:
+        print("looks like you don't have any orders.")
 
+def showUniqOrder(userId, orderId):
+    print("")
+    print("")
+    sql = "SELECT * FROM ordersTable WHERE orderId=?"
+    result = c.execute(sql, (orderId,))
+    result = c.fetchone()
+    if not result:
+        print("No order of that ID")
+        return
+    userItems = result['items']
+    userTotal = result['total']
+    userItems = fromJSON(userItems) #change from json into list
+    IdList = []
+    itemsList = []
+    quantityList = []
+    priceList = []
+    descriptionList = []
+    for x in range(len(userItems)):
+        IdList.append(userItems[x]['inventoryId'])
+        itemsList.append(userItems[x]['item'])
+        quantityList.append(userItems[x]['quantity'])
+        priceList.append(userItems[x]['price'])
+        descriptionList.append(userItems[x]['description'])
+    print ("%-5s%-60s%-40s%-5s%24s%10s\n" % ("ID", "Item Name", "Description", "Quantity","|", "Price"))
+    for x in range(len(userItems)):
+        print ("%-5s%-60s%-40s%-5s%27s%10s\n" % (str(IdList[x]), str(itemsList[x]), str(descriptionList[x]), str(quantityList[x]),"$", str(( "%8.2f"% priceList[x]))))
+    print("Final Total: $", ( "%8.2f"% userTotal))
+    print("")
+    print("")
 
 
