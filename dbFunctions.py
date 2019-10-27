@@ -405,7 +405,8 @@ def showUniqOrder(userId, orderId):
         descriptionList.append(userItems[x]['description'])
     print ("%-5s%-60s%-40s%-5s%24s%10s\n" % ("ID", "Item Name", "Description", "Quantity","|", "Price"))
     for x in range(len(userItems)):
-        print ("%-5s%-60s%-40s%-5s%27s%10s\n" % (str(IdList[x]), str(itemsList[x]), str(descriptionList[x]), str(quantityList[x]),"$", str(( "%8.2f"% priceList[x]))))
+        if(quantityList[x] > 0):
+            print ("%-5s%-60s%-40s%-5s%27s%10s\n" % (str(IdList[x]), str(itemsList[x]), str(descriptionList[x]), str(quantityList[x]),"$", str(( "%8.2f"% priceList[x]))))
     print("Final Total: $", ( "%8.2f"% userTotal))
     print("")
     print("")
