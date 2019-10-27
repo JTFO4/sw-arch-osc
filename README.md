@@ -1,7 +1,9 @@
-# Software Architecture OSC
+# sw-arch-osc
 CSE 4233 - OSC Software Repository
 
-# Dependencies
-* npm >= 6.12.0
-* NodeJS >= 10.16.3
-* Angular CLI >= 8.3.9
+Database must be initialized before running main
+These commands in this order should be made:
+python initializeDB.py
+python initializeTables.py
+python main.py
+
